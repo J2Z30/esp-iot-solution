@@ -92,13 +92,18 @@ esp_err_t iot_button_new_gpio_device(const button_config_t *button_config, const
     gpio_conf.intr_type = GPIO_INTR_DISABLE;
     gpio_conf.mode = GPIO_MODE_INPUT;
     gpio_conf.pin_bit_mask = (1ULL << gpio_cfg->gpio_num);
-    if (!gpio_cfg->disable_pull) {
-        if (gpio_cfg->active_level) {
-            gpio_conf.pull_down_en = GPIO_PULLDOWN_ENABLE;
-            gpio_conf.pull_up_en = GPIO_PULLUP_DISABLE;
-        } else {
-            gpio_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
-            gpio_conf.pull_up_en = GPIO_PULLUP_ENABLE;
+    if (gpio_conf.pin_bit_mask & ~SOC_GPIO_VALID_OUTPUT_GPIO_MASK) {
+        /* 仅作输入管脚,没有输出功能,不带输出驱动器或内置上拉/下拉电路,依赖外部电路驱动电平. */
+        ESP_LOGW(TAG, "GPIO can only be used as input mode,Depend on external circuit to drive the level.");
+    } else {
+        if (!gpio_cfg->disable_pull) {
+            if (gpio_cfg->active_level) {
+                gpio_conf.pull_down_en = GPIO_PULLDOWN_ENABLE;
+                gpio_conf.pull_up_en = GPIO_PULLUP_DISABLE;
+            } else {
+                gpio_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+                gpio_conf.pull_up_en = GPIO_PULLUP_ENABLE;
+            }
         }
     }
     gpio_config(&gpio_conf);
